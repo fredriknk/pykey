@@ -197,7 +197,7 @@ def main():
 
     if len(keys) == 0:
         print("Sorry... Nothing found....")
-    else
+    else:
         print()
         for key in keys:
             print(key)
