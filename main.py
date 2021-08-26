@@ -20,10 +20,7 @@ GPOINT = (Gx, Gy)  # This is our generator point. Trillions of dif ones possible
 
 # bytes to read at a time from file (10meg)
 readlength=10*1024*1024
-#1308201130201010420
-#magic = '\x01\x30\x82\x01\x13\x02\x01\x01\x04\x20'
-#magic = b'\x13\x02\x01\x01\x04\x20'
-#magiclen = len(magic)
+
 magic_numbers = {
 "berkley":"62 31 05 00 09 00 00 00",
 "bitcoin_word":"69 74 63 6f 69 6e",
@@ -79,20 +76,20 @@ def find_keys(filename,magic_numbers):
                             key_data = int.from_bytes(key_data, byteorder='big', signed=False)
                             get_addr(key_data)
 
-                            results[key].append([blockpos+pos,key_data])
+                            results[key].append([hex(blockpos+pos),key_data])
                         else:
-                            print("Found a "+ key +" instace at position: " + str(blockpos+pos) )
-                            results[key].append(blockpos + pos)
+                            #print("Found a "+ key +" instace at position: " + str(blockpos+pos) )
+                            results[key].append(hex(blockpos+pos))
                     pos += 1
 
             # are we at the end of the file?
             if len(data) == readlength:
                 # make sure we didn't miss any keys at the end of the block
-                f.seek(f.tell() - (32 + magiclen))
+                blockpos = (f.tell() - (32 + magiclen))
+                f.seek(blockpos)
 
-            blockpos += readlength
-        print(results)
-    return keyshex
+        #print(results)
+    return keyshex,results
 
 def modinv(a: int, n: int = PCURVE):
     # MAXIMO COMUN DIVISOR: Extended Euclidean Algorithm/'division' in elliptic curves
@@ -232,10 +229,10 @@ def main():
         print("./{0} <filename>".format(sys.argv[0]))
         exit()
 
-    keys = find_keys(sys.argv[1],magic_numbers)
-
-    if len(keys) == 0:
-        print("Sorry... Nothing found....")
+    keys,results = find_keys(sys.argv[1],magic_numbers)
+    print(results)
+    with open(sys.argv[1]+".results", 'w') as f:
+        print(results, file=f)
     # else:
     #     print()
     #     for key in keys:
