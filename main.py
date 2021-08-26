@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from hashlib import sha256, new
 import binascii
+import requests
 import os
 import hashlib
 import sys
@@ -19,41 +20,79 @@ GPOINT = (Gx, Gy)  # This is our generator point. Trillions of dif ones possible
 
 # bytes to read at a time from file (10meg)
 readlength=10*1024*1024
-
+#1308201130201010420
 #magic = '\x01\x30\x82\x01\x13\x02\x01\x01\x04\x20'
-magic = b'\x13\x02\x01\x01\x04\x20'
-magiclen = len(magic)
+#magic = b'\x13\x02\x01\x01\x04\x20'
+#magiclen = len(magic)
+magic_numbers = {
+"berkley":"62 31 05 00 09 00 00 00",
+"bitcoin_word":"69 74 63 6f 69 6e",
+"bitcoin_old_wal_key":"01 30 82 01 13 02 01 01 04 20",
+"bitcoin_keymeta":"00 01 07 6b 65 79 6d 65 74 61",
+"bitcoin_defaultkey":"00 01 0a 64 65 66 61 75 6c 74 6b 65 79",
+"bitcoin_minversion":"00 01 0a 6d 69 6e 76 65 72 73 69 6f 6e",
+"bitcoin_bestblock":"00 01 09 62 65 73 74 62 6c 6f 63 6b",
+"bitcoin_acc":"00 01 03 61 63 63",
+"bitcoin_key":"00 01 03 6b 65 79",
+"bitcoin_ckey_Encrypted_key":"00 01 04 63 6b 65 79",
+"bitcoin_mkey_encrypted_wallets":"00 01 04 6d 6b 65 79",
+"bitcoin_name":"00 01 04 6e 61 6d 65",
+"bitcoin_purpose":"00 01 07 70 75 72 70 6f 73 65",
+"bitcoin_bitcoin_qt_blockchain":"F9 BE B4 D9",
+"bitcoin_multibit_wallet_file":"0A 16 6F 72 67 2E 62 69 74 63 6F 69 6E 2E 70 72",
+"bitcoin_multibit_bitcoin_info":"6D 75 6C 74 69 42 69 74",
+"ethereum_ciphrtext":"63 6f 6e 74 65 6e 74 3a 63 69 70 68 65 72 74 65 78 74",
+"ethereum_word":"65 74 68 65 72 65 75 6d"}
 
 
+for key in magic_numbers.keys():
+    magic_numbers[key] = bytearray.fromhex(magic_numbers[key].replace(" ",""))
 
-def find_keys(filename):
-    keys = set()
+
+def find_keys(filename,magic_numbers):
+    results = {k: [] for k in magic_numbers.keys()}
+    keyshex = set()
     with open(filename, "rb") as f:
         # read through target file one block at a time
+        blockpos = 0
+
         while True:
             data = f.read(readlength)
             if not data:
                 break
-
             # look in this block for keys
-            pos = 0
-            while True:
-                # find the magic number
-                pos = data.find(magic, pos)
-                if pos == -1:
-                    break
-                key_offset = pos + magiclen
-                key_data = data[key_offset:key_offset + 32]
-                keys.add(key_data)
-                key_data = int.from_bytes(key_data, byteorder='big', signed=False)
-                get_addr(key_data)
-                pos += 1
+            for key in magic_numbers.keys():
+                magic = magic_numbers[key]
+                magiclen = len(magic)
+                pos = 0
+                while True:
+                    # find the magic number
+                    pos = data.find(magic, pos)
+                    if pos == -1:
+                        break
+
+                    else:
+                        if key == "oldwalkey":
+                            key_offset = pos + magiclen
+                            key_data = data[key_offset:key_offset + 32]
+                            keyshex.add(key_data)
+                            key_data = int.from_bytes(key_data, byteorder='big', signed=False)
+                            get_addr(key_data)
+
+                            results[key].append([blockpos+pos,key_data])
+                        else:
+                            print("Found a "+ key +" instace at position: " + str(blockpos+pos) )
+                            results[key].append(blockpos + pos)
+                    pos += 1
 
             # are we at the end of the file?
             if len(data) == readlength:
                 # make sure we didn't miss any keys at the end of the block
                 f.seek(f.tell() - (32 + magiclen))
-    return keys
+
+            blockpos += readlength
+        print(results)
+    return keyshex
 
 def modinv(a: int, n: int = PCURVE):
     # MAXIMO COMUN DIVISOR: Extended Euclidean Algorithm/'division' in elliptic curves
@@ -193,17 +232,18 @@ def main():
         print("./{0} <filename>".format(sys.argv[0]))
         exit()
 
-    keys = find_keys(sys.argv[1])
+    keys = find_keys(sys.argv[1],magic_numbers)
 
     if len(keys) == 0:
         print("Sorry... Nothing found....")
-    else:
-        print()
-        for key in keys:
-            print(key)
+    # else:
+    #     print()
+    #     for key in keys:
+            #print(key)
+            #get_addr(key)
 
 def get_addr(privkey):
-    print(f"PRIVATE KEY:\t {hex(privkey)[2:].zfill(64).upper()}")
+    #print(f"PRIVATE KEY:\t {hex(privkey)[2:].zfill(64).upper()}")
 
     # Public hex test
     hex_publics = private_to_hex_publics(privkey)
@@ -216,8 +256,12 @@ def get_addr(privkey):
 
     # Public keys
     public = hex_public_to_public_addresses(hex_publics)
-    print(f"possible privkey: \t 0x{hex(privkey)[2:].zfill(64).upper()}")
-    print(f"possible addr:    \t {public[0]}")
+    print(f"possible privkey: \t\t 0x{hex(privkey)[2:].zfill(64).upper()}")
+    print(f"possible addr:    \t\t {public[0]}")
+    link = "https://blockchain.info/q/getreceivedbyaddress/"+public[0]
+    r = requests.get(link)
+    print(f"Total satoshis received:  \t {float(r.text)/100e6}₿")
+    print("--------------------------------------")
 
 if __name__ == "__main__":
     main()
