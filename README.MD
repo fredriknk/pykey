@@ -14,10 +14,16 @@ output
 ./filename.img.result
 
 containing:
+{'berkley': ['0xc', '0x200c'], 'bitcoin_word': [], 'bitcoin_old_wal_key': [], 'bitcoin_keymeta': [], 'bitcoin_defaultkey': ['0xbe69'], 'bitcoin_minversion': ['0xbe31'], 'bitcoin_bestblock': [], 'bitcoin_acc': ['0x4fed'], 'bitcoin_ke
+y': [], 'bitcoin_ckey_Encrypted_key': ['0x30f5', '0x5855', '0x58b5', '0x5915', '0x8fd5', '0x9d35', '0x9d95', '0x9df5', '0x9e55', '0x9eb5', '0x9f15', '0x9f75', '0x9fd5', '0xbd2d', '0xbd8d'], 'b
+itcoin_mkey_encrypted_wallets': ['0x9cf5', '0xbced'], 'bitcoin_name': ['0x9c15', '0x9c51', '0x9c81', '0xbc0d', '0xbc49', '0xbc79'], 'bitcoin_purpose': [], 'bitcoin_bitcoin_qt_blockchain': [], 'bitcoin_multibit_wallet_file': [], 'bit
+coin_multibit_bitcoin_info': [], 'ethereum_ciphrtext': [], 'ethereum_word': []}
 
 
 
-if you find something consider giving a finders fee to 
+
+
+#if you find something consider giving a finders fee to 
 
 BTC:
 
